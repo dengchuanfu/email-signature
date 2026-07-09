@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>邮箱签名生成器</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <main class="workspace">
+      <section class="intro-note">
+        <p class="eyebrow">Email Signature Generator</p>
+        <p class="intro-text">固定使用默认模板效果，左侧填写信息，右侧实时预览，并可直接复制或下载 HTML。</p>
+      </section>
+
+      <section class="editor-layout">
+        <section class="editor-panel">
+          <div class="section-head">
+            <div>
+              <h2>填写签名信息</h2>
+            </div>
+          </div>
+
+          <form id="signatureForm" class="editor-form">
+            <div class="field-group">
+              <h3>个人信息</h3>
+              <div class="field-grid field-grid-personal">
+                <label class="field-name">
+                  <span>姓名</span>
+                  <input class="input-name-short" name="name" value="Monster" maxlength="40">
+                </label>
+                <label>
+                  <span>职位</span>
+                  <input name="title" value="IT工程师" maxlength="40">
+                </label>
+                <label>
+                  <span>部门</span>
+                  <input name="department" value="秘书处" maxlength="50">
+                </label>
+                <label class="field-accent">
+                  <span>强调色</span>
+                  <div class="color-input">
+                    <input name="accent" type="color" value="#5273ff">
+                    <input class="input-accent-short" name="accentText" value="#5273ff" maxlength="7">
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <h3>联系方式</h3>
+              <div class="field-grid">
+                <label>
+                  <span>邮箱</span>
+                  <input name="email" value="dengchuanfu@cenkersz.com" maxlength="80">
+                </label>
+                <label>
+                  <span>手机</span>
+                  <input name="mobile" value="183-3333-3333" maxlength="40">
+                </label>
+                <label class="field-span-full">
+                  <span>地址</span>
+                  <input name="address" value="深圳市龙华区大浪街道恒大时尚慧谷6A-11层" maxlength="120">
+                </label>
+                <label>
+                  <span>公司</span>
+                  <input name="company" value="岑科科技（深圳）集团有限公司" maxlength="120">
+                </label>
+                <label>
+                  <span>网址</span>
+                  <input name="website" value="https://www.cenkersz.com" maxlength="120">
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <h3>图片</h3>
+              <div class="field-grid">
+                <label class="field-span-full">
+                  <span>上传图片</span>
+                  <input id="imageUpload" type="file" accept="image/*">
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <h3>底部宣传条</h3>
+              <div class="field-grid">
+                <label>
+                  <span>标题</span>
+                  <input name="promoTitle" value="岑科电感&amp;变压器" maxlength="80">
+                </label>
+                <label>
+                  <span>按钮文字（默认跳转网址链接）</span>
+                  <input name="ctaText" value="更多&gt;&gt;" maxlength="30">
+                </label>
+                <label class="field-span-full">
+                  <span>副标题</span>
+                  <input name="promoSubtitle" value="成为全球元器件解决方案提供商" maxlength="120">
+                </label>
+              </div>
+            </div>
+          </form>
+
+          <div class="action-row">
+            <button id="copyHtmlButton" class="action-button" type="button">复制 HTML</button>
+            <button id="downloadHtmlButton" class="action-button action-button-secondary" type="button">下载 HTML</button>
+            <button id="resetButton" class="text-button" type="button">恢复默认</button>
+          </div>
+        </section>
+
+        <section class="preview-panel">
+          <div class="section-head">
+            <div>
+              <h2>最终生成效果</h2>
+            </div>
+          </div>
+
+          <div class="preview-shell">
+            <div class="preview-canvas">
+              <div id="signaturePreview" class="signature-preview"></div>
+            </div>
+          </div>
+
+          <label class="html-output">
+            <span>导出 HTML</span>
+            <textarea id="htmlOutput" readonly spellcheck="false"></textarea>
+          </label>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

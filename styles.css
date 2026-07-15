@@ -223,6 +223,11 @@ input[type="color"] {
   cursor: pointer;
 }
 
+.action-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .action-button {
   padding: 11px 16px;
   border-radius: 12px;

@@ -23,6 +23,9 @@ const ICONS = {
 };
 
 const DEFAULT_IMAGE_PATH = "http://yyby.top/upload/%E6%8A%96%E9%9F%B3%E5%A4%B4%E5%83%8F.png";
+const UPYUN_CONFIG = {
+  uploadUrl: "/api/upyun-upload"
+};
 
 const form = document.getElementById("signatureForm");
 const previewRoot = document.getElementById("signaturePreview");
@@ -33,6 +36,8 @@ const downloadHtmlButton = document.getElementById("downloadHtmlButton");
 const resetButton = document.getElementById("resetButton");
 
 const state = { ...defaultState };
+let imageUploadRequestId = 0;
+let imageUploadInProgress = false;
 
 function escapeHtml(value) {
   return String(value)
@@ -95,6 +100,94 @@ function normalizeTel(value) {
   return String(value).trim().replace(/\s+/g, "");
 }
 
+function getUpyunConfig() {
+  return {
+    ...UPYUN_CONFIG,
+    ...(window.UPYUN_CONFIG || {})
+  };
+}
+
+function setImageUploadInProgress(value) {
+  imageUploadInProgress = value;
+  copyHtmlButton.disabled = value;
+  downloadHtmlButton.disabled = value;
+  copyHtmlButton.title = value ? "Image is uploading to UPYUN." : "";
+  downloadHtmlButton.title = value ? "Image is uploading to UPYUN." : "";
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(reader.error || new Error("Failed to read image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getFileExtension(file) {
+  const nameExtension = file.name.split(".").pop();
+
+  if (nameExtension && /^[a-z0-9]{2,8}$/i.test(nameExtension)) {
+    return nameExtension.toLowerCase();
+  }
+
+  const mimeExtension = file.type.split("/").pop();
+  return mimeExtension && /^[a-z0-9]{2,8}$/i.test(mimeExtension) ? mimeExtension.toLowerCase() : "png";
+}
+
+function createImageSaveKey(file) {
+  const extension = getFileExtension(file);
+  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `/email-signature/${timestamp}-${randomPart}.${extension}`;
+}
+
+async function uploadImageToUpyun(file) {
+  const config = getUpyunConfig();
+
+  if (!config.uploadUrl) {
+    throw new Error("UPYUN uploadUrl is not configured.");
+  }
+
+  if (window.location.protocol === "file:" && config.uploadUrl.startsWith("/")) {
+    throw new Error("Please start the local server before uploading images.");
+  }
+
+  let response;
+
+  try {
+    response = await fetch(config.uploadUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+        "X-File-Name": encodeURIComponent(file.name),
+        "X-Save-Key": encodeURIComponent(createImageSaveKey(file))
+      },
+      body: file
+    });
+  } catch (error) {
+    throw new Error("Cannot reach the local upload service. Please run npm start and open the local URL.");
+  }
+
+  let result = {};
+
+  try {
+    result = await response.json();
+  } catch (error) {
+    result = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(result.error || `UPYUN upload failed: ${response.status}`);
+  }
+
+  if (!result.url) {
+    throw new Error("UPYUN upload response does not include an image URL.");
+  }
+
+  return result.url;
+}
+
 function collectFormState() {
   const formData = new FormData(form);
   const accentTextValue = formData.get("accentText")?.toString().trim() || "";
@@ -119,7 +212,11 @@ function collectFormState() {
   form.querySelector('input[name="accentText"]').value = state.accent;
 }
 
-function currentImageSource() {
+function currentImageSource(options = {}) {
+  if (options.preview && state.previewImageData) {
+    return state.previewImageData;
+  }
+
   return state.imageData || createFallbackImage(state.name, state.accent);
 }
 
@@ -127,8 +224,8 @@ function buildIcon(url) {
   return `<img src="${url}" style="display: inline; outline: 0; border: none; text-decoration: none; height: 14px; vertical-align: -3px; width: 14px; background: ${state.accent}; margin-right: 4px;" />`;
 }
 
-function buildSignatureHtml() {
-  const imageSource = currentImageSource();
+function buildSignatureHtml(options = {}) {
+  const imageSource = currentImageSource(options);
   const roleText = [state.title, state.department].filter(Boolean).join(" | ");
   const websiteUrl = normalizeUrl(state.website);
   const websiteLabel = normalizeWebsiteLabel(state.website);
@@ -141,7 +238,7 @@ function buildSignatureHtml() {
 <table border="0" cellpadding="0" style="margin-bottom: 10px; margin-left: 0; margin-right: auto; width: auto;" width="100%">
 <tbody>
 <tr>
-<td style="padding-right: 20px; border-right: 3px solid ${state.accent};"><img src="${escapeHtml(imageSource)}" width="125" height="127" style="user-select: none;" /></td>
+<td style="padding-right: 20px; border-right: 3px solid ${state.accent};"><img src="${escapeHtml(imageSource)}" alt="${escapeHtml(state.name)}" width="125" height="127" border="0" style="display: block; width: 125px; height: 127px; border: 0; outline: none; text-decoration: none; user-select: none;" /></td>
 <td style="padding-left: 20px;">
 <h3 style="font-size: 1.125em; font-weight: bold; line-height: 1.75; margin: 0; color: ${state.accent};">${escapeHtml(state.name)}</h3>
 <p style="font-size: .75em; line-height: 1; margin: 0 0 12px;">${escapeHtml(roleText)}</p>
@@ -184,9 +281,8 @@ function buildSignatureHtml() {
 }
 
 function renderPreview() {
-  const html = buildSignatureHtml();
-  previewRoot.innerHTML = html;
-  htmlOutput.value = html;
+  previewRoot.innerHTML = buildSignatureHtml({ preview: true });
+  htmlOutput.value = buildSignatureHtml();
 }
 
 async function loadDefaultImage() {
@@ -222,6 +318,7 @@ async function loadDefaultImage() {
 function resetForm() {
   form.reset();
   state.imageData = defaultState.imageData;
+  state.previewImageData = "";
   imageUpload.value = "";
   form.querySelector('input[name="accent"]').value = defaultState.accent;
   form.querySelector('input[name="accentText"]').value = defaultState.accent;
@@ -230,6 +327,11 @@ function resetForm() {
 }
 
 function downloadHtml() {
+  if (imageUploadInProgress) {
+    window.alert("Image upload is still in progress. Please try again after it finishes.");
+    return;
+  }
+
   const blob = new Blob([htmlOutput.value], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -242,6 +344,11 @@ function downloadHtml() {
 }
 
 async function copyHtml() {
+  if (imageUploadInProgress) {
+    window.alert("Image upload is still in progress. Please try again after it finishes.");
+    return;
+  }
+
   try {
     await navigator.clipboard.writeText(htmlOutput.value);
   } catch (error) {
@@ -265,21 +372,49 @@ form.addEventListener("input", (event) => {
   renderPreview();
 });
 
-imageUpload.addEventListener("change", (event) => {
+imageUpload.addEventListener("change", async (event) => {
   const [file] = event.target.files || [];
+  const requestId = ++imageUploadRequestId;
 
   if (!file) {
     state.imageData = defaultState.imageData;
+    state.previewImageData = "";
+    setImageUploadInProgress(false);
     renderPreview();
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.imageData = typeof reader.result === "string" ? reader.result : "";
+  if (!file.type.startsWith("image/")) {
+    imageUpload.value = "";
+    setImageUploadInProgress(false);
+    window.alert("Please choose an image file.");
+    return;
+  }
+
+  try {
+    state.previewImageData = await readFileAsDataUrl(file);
     renderPreview();
-  };
-  reader.readAsDataURL(file);
+
+    setImageUploadInProgress(true);
+    const uploadedUrl = await uploadImageToUpyun(file);
+
+    if (requestId !== imageUploadRequestId) {
+      return;
+    }
+
+    state.imageData = uploadedUrl;
+    renderPreview();
+  } catch (error) {
+    if (requestId === imageUploadRequestId) {
+      state.previewImageData = "";
+      renderPreview();
+      window.alert(error.message || "Image upload failed.");
+    }
+  } finally {
+    if (requestId === imageUploadRequestId) {
+      setImageUploadInProgress(false);
+    }
+  }
 });
 
 copyHtmlButton.addEventListener("click", copyHtml);
@@ -288,4 +423,3 @@ resetButton.addEventListener("click", resetForm);
 
 collectFormState();
 renderPreview();
-loadDefaultImage();

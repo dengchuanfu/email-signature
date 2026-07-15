@@ -34,12 +34,57 @@ textarea {
 .page-shell {
   width: min(1280px, calc(100% - 32px));
   margin: 0 auto;
+  min-height: 100vh;
   padding: 20px 0 32px;
+  display: flex;
+  flex-direction: column;
 }
 
 .workspace {
   display: grid;
+  flex: 1;
   gap: 16px;
+}
+
+.site-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.github-link:hover {
+  border-color: rgba(82, 115, 255, 0.34);
+  box-shadow: 0 10px 24px rgba(23, 36, 57, 0.1);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.github-link:focus-visible {
+  outline: 2px solid rgba(82, 115, 255, 0.35);
+  outline-offset: 3px;
+}
+
+.github-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex: 0 0 auto;
 }
 
 .intro-note {

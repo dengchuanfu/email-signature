@@ -257,6 +257,13 @@ function serveStaticFile(request, response) {
 }
 
 const server = http.createServer((request, response) => {
+  if (request.method === "GET" && request.url === "/healthz") {
+    sendJson(response, 200, {
+      status: "ok"
+    });
+    return;
+  }
+
   if (request.method === "POST" && request.url === "/api/upyun-upload") {
     handleUpyunUpload(request, response);
     return;
@@ -271,6 +278,6 @@ const server = http.createServer((request, response) => {
   response.end("Method not allowed");
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Email signature generator is running at http://localhost:${PORT}`);
 });

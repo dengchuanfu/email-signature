@@ -1,5 +1,12 @@
 {
+  "name": "email-signature",
+  "version": "3.0.0",
+  "description": "Email signature generator with UpYun image upload support.",
+  "private": false,
   "scripts": {
     "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
   }
 }
